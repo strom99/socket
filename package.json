@@ -1,5 +1,11 @@
 {
+  "scripts": {
+    "start": "nodemon servidorNode.js"
+  },
   "dependencies": {
     "websocket": "^1.0.34"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
   }
 }

@@ -2,6 +2,9 @@ document.getElementById("conectar").addEventListener("click", btnsock);
 document.getElementById("btnsend").addEventListener("click", clickbtnsend);
 document.getElementById("desconectar").addEventListener("click", desconectar);
 const divchat = document.getElementById("divchat");
+const mgpublic = document.getElementById("mgpublic");
+const mgprivat = document.getElementById("mgprivat");
+const mgs = document.getElementById("mgs");
 let conectados = [];
 
 function btnsock() {
@@ -20,29 +23,66 @@ function crearWebSocket() {
 
   socket = new WebSocket("ws://localhost:8089");
   socket.onopen = function (evt) {
-    divchat.innerHTML = "<div>Web socket conectado</div>";
-    socket.send(JSON.stringify({ nick }));
+    socket.send(JSON.stringify({ type: "new-connection", nick }));
   };
 
-  // socket.onmessage = (message) => {
-  //   let dato = message.data;
-  //   console.log(JSON.parse(dato));
-  //   divchat.innerHTML += `<div>Message rebut ${message.data}</div>`;
-  //   console.log("Message received from server", message);
-  // };
-
-  socket.onuser = (user) => {
-    console.log("user");
-    console.log(user);
+  socket.onmessage = (message) => {
+    console.log("Message received from server", message);
+    const messageJSON = JSON.parse(message.data);
+    switch (messageJSON.type) {
+      case "new-connection":
+        divchat.innerHTML += `<div>${messageJSON.nick} Se ha conectado</div>`;
+        break;
+      case "new-message":
+        // diferenciamos los tipos de mensaje
+        switch (messageJSON.channel) {
+          case "private":
+            mgprivat.innerHTML += `<div>Mensaje privado de ${messageJSON.nick}: ${messageJSON.text}</div>`;
+            break;
+          case "public":
+            mgpublic.innerHTML += `<div>Mensaje publico de ${messageJSON.nick}: ${messageJSON.text}</div>`;
+            break;
+          case "error":
+            mgs.innerHTML += `<div>Error ${messageJSON.message}</div>`;
+            break;
+        }
+        break;
+    }
   };
 }
 function clickbtnsend() {
   const text = document.getElementById("inchat").value;
-  socket.send(text);
-  divchat.innerHTML = `<div>${nick}: enviado...${text}</div>`;
+  if (socket.readyState === WebSocket.OPEN) {
+    socket.send(
+      JSON.stringify({ type: "new-message", channel: "public", nick, text })
+    );
+  } else {
+    console.log("El WebSocket aún no está listo para enviar mensajes.");
+  }
 }
 
+document.getElementById("btnsend-private").addEventListener("click", () => {
+  const to = document.getElementById("private-to").value;
+  const message = document.getElementById("private-message").value;
+  socket.send(
+    JSON.stringify({
+      type: "new-message",
+      channel: "private",
+      nick,
+      receiver: to,
+      text: message,
+    })
+  );
+});
+
 function desconectar() {
+  socket.send(
+    JSON.stringify({
+      type: "closed-connection",
+      channel: "public",
+      nick,
+    })
+  );
   socket.close();
-  divchat.innerHTML += "<div>desconnectant..</div>";
+  divchat.innerHTML += "<div>Te has desconectado</div>";
 }

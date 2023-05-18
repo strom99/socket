@@ -4,14 +4,30 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/style.css" />
     <title>Document</title>
   </head>
   <body>
-    <button id="conectar">Conectar</button>
-    <button id="desconectar">Desconectar</button>
-    <div id="divchat"></div>
+    <button id="conectar" class="btn green">Conectar</button>
+    <button id="desconectar" class="btn red">Desconectar</button>
+    <hr />
+    <div id="divchat">Conexiones:</div>
+
+    <hr />
+    <div id="mgpublic"></div>
+
     <input type="text" id="inchat" />
-    <button id="btnsend">Send</button>
+    <button id="btnsend" class="btn general">Send</button>
+
+    <hr />
+
+    <div id="mgprivat"></div>
+
+    <input type="text" id="private-to" placeholder="Destinatario" />
+    <input type="text" id="private-message" placeholder="Mensaje privado" />
+    <button id="btnsend-private" class="btn general">Enviar privado</button>
+
+    <div id="mgs"></div>
 
     <script src="client.js"></script>
   </body>

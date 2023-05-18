@@ -1,0 +1,40 @@
+body {
+  background-color: #d3d3d329;
+}
+
+.btn {
+  width: 140px;
+  height: 34px;
+  border: none;
+  cursor: pointer;
+  color: white;
+  border-radius: 5px;
+}
+.general {
+  background-color: #2b96f1;
+}
+.general:hover {
+  background-color: #0088ff;
+}
+.red {
+  background-color: #ff4040;
+}
+.green {
+  background-color: #198f00;
+}
+
+#divchat {
+  margin-bottom: 50px;
+}
+
+#mgs {
+  color: red;
+}
+
+.mio {
+  background-color: aquamarine;
+}
+
+.otro {
+  background-color: rgb(140, 254, 178);
+}

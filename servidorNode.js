@@ -3,10 +3,8 @@ const fs = require("fs");
 const path = require("path");
 const WebSocket = require("websocket").server;
 
-const connexions = [];
-const connexions_valides = {}; // { nick: "Pedro", mensaje: "Hola" }
+const connections = {}; // lista de conexiones por usuario
 
-// crear el servidor http
 const server = http.createServer((request, response) => {
   let filepath = path.join(__dirname, request.url);
   fs.access(filepath, fs.constants.F_OK, (error) => {
@@ -19,14 +17,27 @@ const server = http.createServer((request, response) => {
           response.writeHead(500); // error del servidor
           response.end();
         } else {
-          response.writeHead(200, { "Content-Type": "text/html" });
+          // para interpretar bien los archivos
+          const extName = path.extname(filepath);
+
+          switch (extName) {
+            case ".html":
+              response.writeHead(200, { "Content-Type": "text/html" });
+              break;
+            case ".css":
+              response.writeHead(200, { "Content-Type": "text/css" });
+              break;
+            case ".js":
+              response.writeHead(200, { "Content-Type": "text/javascript" });
+              break;
+          }
+
           response.write(data);
           response.end();
         }
       });
     }
   });
-  console.log("Peticion del recurso" + filepath);
 });
 
 const ws_server = new WebSocket({
@@ -35,40 +46,58 @@ const ws_server = new WebSocket({
 });
 
 ws_server.on("request", (request) => {
-  console.log("peticio ws", request.origin);
-  const conexion = request.accept(null, request.origin);
-
-  conexion.on("user", (user) => {
-    ws_server.broadcast(user.utf8Data);
-    console.log("user" + JSON.parse(user.utf8Data).nick);
-  });
-  conexion.on("message", (message) => {
-    console.log("message rebut of" + message.utf8Data);
-    ws_server.broadcast(message.utf8Data);
-    // conexion.send("SEND > " + message.utf8Data);
+  const connection = request.accept(null, request.origin);
+  connection.on("message", (message) => {
     const messageJSON = JSON.parse(message.utf8Data);
-    switch (messageJSON.op) {
-      case "alison":
-        const nick = messageJSON.value;
-        connexions_valides[nick] = conexion;
-        //el trec de les connexions generals
-        const pos = connexions.indexOf(conexion);
-        if (pos != -1) {
-          connexions.splice(pos, 1);
+    switch (messageJSON.type) {
+      case "new-connection":
+        connections[messageJSON.nick] = connection;
+        // envio a todos los conectados
+        ws_server.broadcast(JSON.stringify(messageJSON));
+        break;
+      case "closed-connection":
+        ws_server.broadcast(
+          JSON.stringify({
+            type: "new-message",
+            channel: "public",
+            nick: messageJSON.nick,
+            text: "Se ha desconectado el usuario " + messageJSON.nick,
+          })
+        );
+        connections[messageJSON.nick].close();
+        delete connections[messageJSON.nick];
+        break;
+      case "new-message":
+        // diferencia entre privado y publico
+        switch (messageJSON.channel) {
+          case "private":
+            const receiverConnection = connections[messageJSON.receiver];
+            if (receiverConnection) {
+              receiverConnection.send(JSON.stringify(messageJSON));
+              connection.send(JSON.stringify(messageJSON));
+            } else {
+              connection.send(
+                JSON.stringify({
+                  type: "new-message",
+                  channel: "error",
+                  message: "No hay un usuario con ese nombre conectado",
+                })
+              );
+            }
+            break;
+          case "public":
+            ws_server.broadcast(JSON.stringify(messageJSON));
+            break;
         }
-        //
-
         break;
     }
+    console.log("New message", messageJSON);
+    console.log("Connections", Object.keys(connections));
   });
 
-  conexion.on("close", () => {
-    conexion.close();
+  connection.on("close", (...args) => {
+    console.log("e", connections, args);
     console.log("Tancada la connexió");
-    // const pos = connexions.indexOf(conexion);
-    // if (pos != -1) {
-    //   connexions.splice(pos, 1);
-    // }
   });
 });
 
